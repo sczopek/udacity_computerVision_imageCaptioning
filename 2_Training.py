@@ -49,7 +49,7 @@
 # **Question:** Describe your CNN-RNN architecture in detail.  With this architecture in mind, how did you select the values of the variables in Task 1?  If you consulted a research paper detailing a successful implementation of an image captioning model, please provide the reference.
 # 
 # **Answer:** 
-# It first takes the image and swings it around.  Then it passes the image to the RNN, which turns it on as it the RNN must get it to have a good time.
+# It first takes the image and transform trains it appropriately.  Then it passes the image to the RNN, which turns it into words.
 # 
 # 
 # ### (Optional) Task #2
@@ -87,7 +87,7 @@
 # 
 # **Answer:** 
 
-# In[2]:
+# In[1]:
 
 
 import torch
@@ -100,15 +100,18 @@ from data_loader import get_loader
 from model import EncoderCNN, DecoderRNN
 import math
 
+import nltk
+nltk.download('punkt')
+
 
 ## TODO #1: Select appropriate values for the Python variables below.
 batch_size = 256          # batch size
-vocab_threshold = 60        # minimum word count threshold
+vocab_threshold = 10        # minimum word count threshold
 vocab_from_file = True    # if True, load existing vocab file
 embed_size = 256           # dimensionality of image and word embeddings
 hidden_size = 256          # number of features in hidden state of the RNN decoder
-num_epochs = 3             # number of training epochs
-save_every = 1             # determines frequency of saving model weights
+num_epochs = 15             # number of training epochs
+save_every = 3             # determines frequency of saving model weights
 print_every = 100          # determines window for printing average loss
 log_file = 'training_log.txt'       # name of file with saved training loss and perplexity
 
@@ -180,7 +183,7 @@ total_step = math.ceil(len(data_loader.dataset.caption_lengths) / data_loader.ba
 # 
 # That said, if you would like to go above and beyond in this project, you can read about some approaches to minimizing overfitting in section 4.3.1 of [this paper](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7505636).  In the next (optional) step of this notebook, we provide some guidance for assessing the performance on the validation dataset.
 
-# In[2]:
+# In[ ]:
 
 
 import torch.utils.data as data
@@ -197,67 +200,73 @@ response = requests.request("GET",
                             "http://metadata.google.internal/computeMetadata/v1/instance/attributes/keep_alive_token", 
                             headers={"Metadata-Flavor":"Google"})
 
-for epoch in range(1, num_epochs+1):
-    
-    for i_step in range(1, total_step+1):
-        
-        if time.time() - old_time > 60:
-            old_time = time.time()
-            requests.request("POST", 
-                             "https://nebula.udacity.com/api/v1/remote/keep-alive", 
-                             headers={'Authorization': "STAR " + response.text})
-        
-        # Randomly sample a caption length, and sample indices with that length.
-        indices = data_loader.dataset.get_train_indices()
-        # Create and assign a batch sampler to retrieve a batch with the sampled indices.
-        new_sampler = data.sampler.SubsetRandomSampler(indices=indices)
-        data_loader.batch_sampler.sampler = new_sampler
-        
-        # Obtain the batch.
-        images, captions = next(iter(data_loader))
 
-        # Move batch of images and captions to GPU if CUDA is available.
-        images = images.to(device)
-        captions = captions.to(device)
-        
-        print(captions)
-        
-        # Zero the gradients.
-        decoder.zero_grad()
-        encoder.zero_grad()
-        
-        # Pass the inputs through the CNN-RNN model.
-        features = encoder(images)
-        outputs = decoder(features, captions)
-        
-        # Calculate the batch loss.
-        loss = criterion(outputs.view(-1, vocab_size), captions.view(-1))
-        
-        # Backward pass.
-        loss.backward()
-        
-        # Update the parameters in the optimizer.
-        optimizer.step()
-            
-        # Get training statistics.
-        stats = 'Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' % (epoch, num_epochs, i_step, total_step, loss.item(), np.exp(loss.item()))
-        
-        # Print training statistics (on same line).
-        print('\r' + stats, end="")
-        sys.stdout.flush()
-        
-        # Print training statistics to file.
-        f.write(stats + '\n')
-        f.flush()
-        
-        # Print training statistics (on different line).
-        if i_step % print_every == 0:
-            print('\r' + stats)
-            
-    # Save the weights.
-    if epoch % save_every == 0:
-        torch.save(decoder.state_dict(), os.path.join('./models', 'decoder-%d.pkl' % epoch))
-        torch.save(encoder.state_dict(), os.path.join('./models', 'encoder-%d.pkl' % epoch))
+from workspace_utils import keep_awake
+
+for i in keep_awake(range(5)):  
+    #anything that happens inside this loop will keep the workspace active
+    # do iteration with lots of work here
+    for epoch in range(1, num_epochs+1):
+
+        for i_step in range(1, total_step+1):
+
+            if time.time() - old_time > 60:
+                old_time = time.time()
+                requests.request("POST", 
+                                 "https://nebula.udacity.com/api/v1/remote/keep-alive", 
+                                 headers={'Authorization': "STAR " + response.text})
+
+            # Randomly sample a caption length, and sample indices with that length.
+            indices = data_loader.dataset.get_train_indices()
+            # Create and assign a batch sampler to retrieve a batch with the sampled indices.
+            new_sampler = data.sampler.SubsetRandomSampler(indices=indices)
+            data_loader.batch_sampler.sampler = new_sampler
+
+            # Obtain the batch.
+            images, captions = next(iter(data_loader))
+
+            # Move batch of images and captions to GPU if CUDA is available.
+            images = images.to(device)
+            captions = captions.to(device)
+
+            # print(captions)
+
+            # Zero the gradients.
+            decoder.zero_grad()
+            encoder.zero_grad()
+
+            # Pass the inputs through the CNN-RNN model.
+            features = encoder(images)
+            outputs = decoder(features, captions)
+
+            # Calculate the batch loss.
+            loss = criterion(outputs.view(-1, vocab_size), captions.view(-1))
+
+            # Backward pass.
+            loss.backward()
+
+            # Update the parameters in the optimizer.
+            optimizer.step()
+
+            # Get training statistics.
+            stats = 'Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' % (epoch, num_epochs, i_step, total_step, loss.item(), np.exp(loss.item()))
+
+            # Print training statistics (on same line).
+            print('\r' + stats, end="")
+            sys.stdout.flush()
+
+            # Print training statistics to file.
+            f.write(stats + '\n')
+            f.flush()
+
+            # Print training statistics (on different line).
+            if i_step % print_every == 0:
+                print('\r' + stats)
+
+        # Save the weights.
+        if epoch % save_every == 0:
+            torch.save(decoder.state_dict(), os.path.join('./models', 'decoder-%d.pkl' % epoch))
+            torch.save(encoder.state_dict(), os.path.join('./models', 'encoder-%d.pkl' % epoch))
 
 # Close the training log file.
 f.close()

@@ -31,7 +31,7 @@
 # 
 # Make sure that the transform that you define here agrees with the transform that you used to pre-process the training images (in **2_Training.ipynb**).  For instance, if you normalized the training images, you should also apply the same normalization procedure to the test images.
 
-# In[16]:
+# In[1]:
 
 
 import sys
@@ -58,7 +58,7 @@ data_loader = get_loader(transform=transform_test,
 
 # Run the code cell below to visualize an example test image, before pre-processing is applied.
 
-# In[17]:
+# In[2]:
 
 
 import numpy as np
@@ -79,7 +79,7 @@ plt.show()
 # 
 # In the next code cell we define a `device` that you will use move PyTorch tensors to GPU (if CUDA is available).  Run this code cell before continuing.
 
-# In[18]:
+# In[3]:
 
 
 import torch
@@ -97,7 +97,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # 
 # Plug in both the embedding size and the size of the hidden layer of the decoder corresponding to the selected pickle file in `decoder_file`.
 
-# In[19]:
+# In[4]:
 
 
 # Watch for any changes in model.py, and re-load it automatically.
@@ -143,7 +143,7 @@ decoder.to(device)
 # 
 # After implementing the `sample` method, run the code cell below.  If the cell returns an assertion error, then please follow the instructions to modify your code before proceeding.  Do **not** modify the code in the cell below. 
 
-# In[20]:
+# In[5]:
 
 
 # Move image Pytorch Tensor to GPU if CUDA is available.
@@ -151,6 +151,8 @@ image = image.to(device)
 
 # Obtain the embedded image features.
 features = encoder(image).unsqueeze(1)
+
+# print(dir(decoder))
 
 # Pass the embedded image features through the model to get a predicted caption.
 output = decoder.sample(features)
@@ -166,17 +168,31 @@ assert all([x in data_loader.dataset.vocab.idx2word for x in output]), "Each ent
 # 
 # In the code cell below, complete the `clean_sentence` function.  It should take a list of integers (corresponding to the variable `output` in **Step 3**) as input and return the corresponding predicted sentence (as a single Python string). 
 
-# In[ ]:
+# In[13]:
 
 
 # TODO #4: Complete the function.
 def clean_sentence(output):
+    
+    wordList = []
+    for x in output:
+        word  = data_loader.dataset.vocab.idx2word[x]
+
+        if word = "<start>":
+            continue
+
+        if word = "<end>":
+            break
+            
+        wordList.append( data_loader.dataset.vocab.idx2word[x] )
+    
+    sentence = ' '.join(wordList)
     return sentence
 
 
 # After completing the `clean_sentence` function above, run the code cell below.  If the cell returns an assertion error, then please follow the instructions to modify your code before proceeding.
 
-# In[ ]:
+# In[14]:
 
 
 sentence = clean_sentence(output)
@@ -190,7 +206,7 @@ assert type(sentence)==str, 'Sentence needs to be a Python string!'
 # 
 # In the code cell below, we have written a function (`get_prediction`) that you can use to use to loop over images in the test dataset and print your model's predicted caption.
 
-# In[ ]:
+# In[15]:
 
 
 def get_prediction():
@@ -207,7 +223,7 @@ def get_prediction():
 
 # Run the code cell below (multiple times, if you like!) to test how this function works.
 
-# In[ ]:
+# In[16]:
 
 
 get_prediction()
@@ -223,10 +239,11 @@ get_prediction()
 # 
 # Use the next two code cells to loop over captions.  Save the notebook when you encounter two images with relatively accurate captions.
 
-# In[ ]:
+# In[19]:
 
 
-get_prediction()
+for i in range(3):
+    get_prediction()
 
 
 # In[ ]:
@@ -239,10 +256,11 @@ get_prediction()
 # 
 # Use the next two code cells to loop over captions.  Save the notebook when you encounter two images with relatively inaccurate captions.
 
-# In[ ]:
+# In[20]:
 
 
-get_prediction()
+for i in range(3):
+    get_prediction()
 
 
 # In[ ]:

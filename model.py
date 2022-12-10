@@ -67,12 +67,6 @@ class DecoderRNN(nn.Module):
         # there are no more words to predict after the end token
         embeds = self.embedding(captions[:, :-1])
         embeds = torch.cat((features.unsqueeze(dim=1), embeds), dim=1)
-
-        # use the features to set the hidden state and hidden cell 
-        #_,  hc = self.lstm((features.unsqueeze(dim=1))
-        #out, hc = self.lstm(embeds, hc)
-        
-        # print("embeds.size:   ", embeds.size)
         
         out, hidden = self.lstm(embeds)
         out = self.dropout(out)
@@ -98,30 +92,33 @@ class DecoderRNN(nn.Module):
     def sample(self, inputs, states=None, max_len=20):
         " accepts pre-processed image tensor (inputs) and returns predicted sentence (list of tensor ids of length max_len) "
 
-        # batch_size = features.size(0)
-        # seq_length = captions.size(1)
-        
         # exclude the <"end"> token
         # there are no more words to predict after the end token
         # embeds = self.embedding(captions[:, :-1])
         # embeds = torch.cat((features.unsqueeze(dim=1), embeds), dim=1)
-        
-        # encoder = EncoderCNN()
-        
+
         # embeds = self.embedding(["<start>"])
         # embeds = torch.cat( (inputs.unsqueeze(dim=1), embeds), dim=1)
+        
+        # as per message on knowledge help board
+        # initialize the hidden state and send it to the same device as the inputs
+        hidden = (torch.randn(self.num_layers, 1, self.hidden_size).to(inputs.device),
+                  torch.randn(self.num_layers, 1, self.hidden_size).to(inputs.device))
         
         output = []
         
         for i in range(0, max_len):
-            prelinary_output, hidden = self.lstm(input)
+            prelinary_output, hidden = self.lstm(inputs, hidden)
             prelinary_output = self.dropout(prelinary_output)
             prelinary_output = self.fc(prelinary_output)
-            word = self.hidden2vocab(prelinary_output)
+
+            word = prelinary_output
+            #print(prelinary_output.shape)
+
             word = word.squeeze(1)
             word  = word.argmax(dim=1)
-            output.append(word)
-            inputs = self.embeddings(word.unsqueeze(0))
+            output.append(int(word))
+            inputs = self.embedding(word.unsqueeze(0))
             
         return output
 
