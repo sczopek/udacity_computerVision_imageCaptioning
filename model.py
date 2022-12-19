@@ -102,8 +102,8 @@ class DecoderRNN(nn.Module):
         
         # as per message on knowledge help board
         # initialize the hidden state and send it to the same device as the inputs
-        hidden = (torch.randn(self.num_layers, 1, self.hidden_size).to(inputs.device),
-                  torch.randn(self.num_layers, 1, self.hidden_size).to(inputs.device))
+        hidden = (torch.randn(self.n_layers, 1, self.n_hidden).to(inputs.device),
+                  torch.randn(self.n_layers, 1, self.n_hidden).to(inputs.device))
         
         output = []
         
