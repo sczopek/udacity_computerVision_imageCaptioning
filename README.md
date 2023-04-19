@@ -1,8 +1,4 @@
-# udacity_computerVision_imageCaptioning
-Image Captioning Project for Udacity Computer Vision Course 
-
-
-# Project Goal
+# Project Goal - Computer Vision Image Captioning
 This project’s goal is to create an Image Captioning model, that applies a short text caption to an input photo.  
 Models like these have several uses.  One use is to make an image database text searchable, by applying several captions to each database image and then searching the database by caption text.
 
